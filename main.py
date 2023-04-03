@@ -42,6 +42,7 @@ def send_email():
         print("Failed to send email.")
 
 if __name__ == '__main__':
+    print("Welcome to DMARCSheild, created by Emen Mousavi.")
     while True:
         print("Enter 1 for DMARC Checker")
         print("Enter 2 for Spoofing Email")
