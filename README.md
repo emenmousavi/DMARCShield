@@ -35,7 +35,7 @@ python main.py
 - Follow the prompts to enter the required information for the chosen option.
 
 ## License
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the LICENSE (https://github.com/emenmousavi/DMARCShield/blob/main/LICENSE) file for details.
 
 ## Output Example
 - Screenshot of a DMARC Checker
