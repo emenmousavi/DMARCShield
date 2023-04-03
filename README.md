@@ -33,3 +33,7 @@ python main.py
 ```
 - Choose between option 1 (DMARC Checker) and option 2 (Spoofing Email Sender).
 - Follow the prompts to enter the required information for the chosen option.
+
+## Output Example
+![Screenshot of a DMARC Checker](https://github.com/emenmousavi/DMARCShield/blob/main/1.png)
+![Screenshot of Spoofing Email](https://github.com/emenmousavi/DMARCShield/blob/main/2.png)
