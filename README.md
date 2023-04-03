@@ -35,5 +35,7 @@ python main.py
 - Follow the prompts to enter the required information for the chosen option.
 
 ## Output Example
+- Screenshot of a DMARC Checker
 ![Screenshot of a DMARC Checker](https://github.com/emenmousavi/DMARCShield/blob/main/1.png)
+- Screenshot of Spoofing Email
 ![Screenshot of Spoofing Email](https://github.com/emenmousavi/DMARCShield/blob/main/2.png)
