@@ -1,71 +1,52 @@
-#!/usr/bin/env python3
-
-import os
-import smtplib
 import dns.resolver
-import socket
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.application import MIMEApplication
-import pydmarc
 
-
-def check_dmarc():
-    """Checks if a domain has a DMARC record."""
-    domain = input("Enter a domain to check for DMARC record: ")
+def has_dkim_record(domain):
     try:
-        answers = dns.resolver.query('_dmarc.' + domain, 'TXT')
-        for rdata in answers:
-            if "v=DMARC1" in rdata.strings:
-                dmarc_record = pydmarc.DmarcRecord(rdata.strings[0])
-                policy = dmarc_record.policy
-                reporting_options = dmarc_record.reporting_options
-                print(f"The domain {domain} has a DMARC record with policy {policy} and reporting options {reporting_options}.")
-                return
-        print(f"The domain {domain} does not have a DMARC record.")
-        print("Please configure DMARC for your domain by following the instructions in the article below:")
-        print("https://easydmarc.com/blog/dmarc-step-by-step-guide/")
+        dns.resolver.query(f"_adsp._domainkey.{domain}", 'TXT')
+        return True
+    except dns.resolver.NoAnswer:
+        return False
+    except Exception as e:
+        print(f"An unexpected error occurred while checking for DKIM record: {e}")
+        return False
+
+def is_domain_secure(domain):
+    resolver = dns.resolver.Resolver()
+    resolver.timeout = 1
+    resolver.lifetime = 1
+
+    try:
+        spf_found = False
+        spf_record = resolver.query(domain, 'TXT')
+        for rdata in spf_record:
+            if 'v=spf1' in rdata.strings:
+                spf_found = True
+                break
+        dmarc_found = False
+        dmarc_record = resolver.query(f"_dmarc.{domain}", 'TXT')
+        for rdata in dmarc_record:
+            if 'v=DMARC1' in rdata.strings:
+                dmarc_found = True
+                break
+        return spf_found and has_dkim_record(domain) and dmarc_found
     except dns.resolver.NXDOMAIN:
         print(f"The domain {domain} does not exist.")
+        return False
     except dns.resolver.NoAnswer:
-        print(f"The domain {domain} does not have a DMARC record.")
+        print(f"No TXT record found for {domain}.")
+        return False
     except Exception as e:
-        print(f"Failed to check DMARC record for {domain}: {e}")
+        print(f"An unexpected error occurred while checking domain security: {e}")
+        return False
 
+def check_domain_security(domain):
+    if is_domain_secure(domain):
+        print(f"{domain} is secured properly with SPF, DKIM, and DMARC.")
+    else:
+        print(f"{domain} is not secured properly with SPF, DKIM, and DMARC.")
 
-def send_email():
-    """Sends an email from a given domain."""
-    domain = input("Enter your domain name: ")
-    header = input("Enter email header: ")
-    body = input("Enter email body: ")
-    recipient = input("Enter recipient email address: ")
-    sender = input("Enter sender email address: ")
-
-    try:
-        # Validate domain name
-        domain_parts = domain.split('.')
-        if len(domain_parts) < 2:
-            raise ValueError("Invalid domain name")
-        
-        # Validate email addresses
-        if not recipient or not sender:
-            raise ValueError("Invalid email address")
-        
-        # Check if domain has DMARC record
-        answers = dns.resolver.query('_dmarc.' + domain, 'TXT')
-        for rdata in answers:
-            if "v=DMARC1" not in rdata.strings:
-                raise ValueError("DMARC record not found")
-        
-        # Check SPF and DKIM records
-        # ...
-        
-        message = MIMEMultipart()
-        message['From'] = sender
-        message['To'] = recipient
-        message['Subject'] = header
-        message.attach(MIMEApplication(body, 'html'))
-
-        server = smtplib.SMTP('localhost')
-        server.sendmail(sender, recipient, message.as_string())
-        print("
+domain = input("Enter a domain to check: ")
+if domain:
+    check_domain_security(domain.strip())
+else:
+    print("Please enter a valid domain.")
